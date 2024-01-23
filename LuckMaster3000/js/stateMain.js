@@ -42,6 +42,8 @@ var StateMain = {
     this.background = game.add.sprite(0, 0, "background");
     this.background.anchor.set(0, 0);
 
+
+
     this.barGroup = game.add.group();
     this.graphics = game.add.graphics();
 
@@ -141,7 +143,7 @@ var StateMain = {
       function (bar) {
         if (bar.active == true) {
           bar.y += 50;
-          // bar.filters = this.createBlurFilter(0, 20);
+          bar.filters = this.createBlurFilter(0, 20);
           //if the bar is at the end of a spin
           //which is when the y position
           //is less than the negative height of the bar
@@ -181,11 +183,8 @@ var StateMain = {
     finalTween.onComplete.add(this.checkFinished, this);
   },
   checkFinished() {
-    //subtract 1 from spinCount every time
-    //a bar stops
     this.spinCount--;
 
-    //if all bars have stop reset
     if (this.spinCount == 0) {
       game.time.events.remove(this.spinTimer);
 
@@ -217,9 +216,8 @@ var StateMain = {
     }
   },
   tweenSpinStart() {
-    // Create a tween for the spin start
     var tween = game.add.tween(this.barGroup)
-        .to({ y: this.barGroup.y - 30 }, 500, Phaser.Easing.Cubic.InOut)
+        .to({ y: this.barGroup.y + 30 }, 500, Phaser.Easing.Cubic.InOut)
         .to({ y: this.barGroup.y }, 500, Phaser.Easing.Cubic.InOut);
     tween.start();
 },
