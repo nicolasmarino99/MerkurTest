@@ -97,6 +97,9 @@ var StateMain = {
     this.spinCount = 3;
 
     this.btnSpin.visible = false;
+
+    this.tweenSpinStart();
+
     var s1 = game.rnd.integerInRange(1, 18);
     var s2 = game.rnd.integerInRange(1, 18);
     var s3 = game.rnd.integerInRange(1, 18);
@@ -138,7 +141,7 @@ var StateMain = {
       function (bar) {
         if (bar.active == true) {
           bar.y += 50;
-          bar.filters = this.createBlurFilter(0,20)
+          // bar.filters = this.createBlurFilter(0, 20);
           //if the bar is at the end of a spin
           //which is when the y position
           //is less than the negative height of the bar
@@ -161,13 +164,12 @@ var StateMain = {
   },
   firstSpin: function (bar) {
     bar.y -= 300;
-    //then subtract a spin
     bar.spins--;
   },
   finalSpin: function (bar) {
     var ty = bar.stopPoint;
     bar.filters = null;
-    
+
     var finalTween = game.add.tween(bar).to(
       {
         y: ty,
@@ -214,6 +216,13 @@ var StateMain = {
         this.finalScore(filteredValues[0]);
     }
   },
+  tweenSpinStart() {
+    // Create a tween for the spin start
+    var tween = game.add.tween(this.barGroup)
+        .to({ y: this.barGroup.y - 30 }, 500, Phaser.Easing.Cubic.InOut)
+        .to({ y: this.barGroup.y }, 500, Phaser.Easing.Cubic.InOut);
+    tween.start();
+},
   update: function () {},
   finalScore: (value) => {
     switch (value) {
