@@ -2,12 +2,41 @@ var credits = 100;
 var credits_text;
 var win_text;
 var win = 0;
+const newStrip = [
+  { value: "1bar" },
+  { value: "2bar" },
+  { value: "bell" },
+  { value: "3ball" },
+  { value: "cherry" },
+  { value: "7" },
+  { value: "1bar" },
+  { value: "1bar" },
+  { value: "2bar" },
+  { value: "3bar" },
+  { value: "1bar" },
+  { value: "bell" },
+  { value: "cherry" },
+  { value: "3bar" },
+  { value: "2bar" },
+  { value: "1bar" },
+  { value: "2bar" },
+  { value: "wild" },
+  { value: "1bar" },
+];
 
 var StateMain = {
   preload: function () {
     game.load.image("background", "images/background.png");
     game.load.image("bars", "images/strip_new.png");
     game.load.image("btnSpin", "images/btnSpin.png");
+    game.load.script(
+      "BlurX",
+      "https://cdn.rawgit.com/photonstorm/phaser-ce/master/filters/BlurX.js"
+    );
+    game.load.script(
+      "BlurY",
+      "https://cdn.rawgit.com/photonstorm/phaser-ce/master/filters/BlurY.js"
+    );
   },
   create: function () {
     this.background = game.add.sprite(0, 0, "background");
@@ -16,42 +45,28 @@ var StateMain = {
     this.barGroup = game.add.group();
     this.graphics = game.add.graphics();
 
-    //
-    //add 3 bars
-    //
     for (var i = 0; i < 3; i++) {
       var bar = game.add.sprite(i * 138, 0, "bars");
       this.barGroup.add(bar);
     }
-    //center the bar group horizontally
     this.barGroup.x = 50;
-    //place the group 50 pixels up from the center
-    //because 50 is half the height of the each cell
     this.barGroup.y = 110;
-    //
-    //draw graphics to use as a mask
-    //
+
     this.graphics.beginFill(0xff0000);
     this.graphics.drawRect(0, 0, 400, 100);
     this.graphics.endFill();
-    //subtract 150 from center
-    //because the cells are 100 px each
-    //and there are 3 of them
-    //150 is half the width
+
     this.graphics.x = 50;
     this.graphics.y = this.barGroup.y;
     this.barGroup.mask = this.graphics;
-    //
-    //set initial values
-    //
+
     this.setBar(0, 1);
     this.setBar(1, 1);
     this.setBar(2, 1);
-    //
-    //add spin button
-    //
+
     this.btnSpin = game.add.sprite(game.width / 2, 370, "btnSpin");
     this.btnSpin.anchor.set(0.5, 0.5);
+
     this.btnSpin.inputEnabled = true;
     this.btnSpin.events.onInputDown.add(this.startSpin, this);
 
@@ -86,49 +101,20 @@ var StateMain = {
     var s2 = game.rnd.integerInRange(1, 18);
     var s3 = game.rnd.integerInRange(1, 18);
 
-    const newStrip = [
-      { value: "1bar" },
-      { value: "2bar" },
-      { value: "bell" },
-      { value: "3ball" },
-      { value: "cherry" },
-      { value: "7" },
-      { value: "1bar" },
-      { value: "1bar" },
-      { value: "2bar" },
-      { value: "3bar" },
-      { value: "1bar" },
-      { value: "bell" },
-      { value: "cherry" },
-      { value: "3bar" },
-      { value: "2bar" },
-      { value: "1bar" },
-      { value: "2bar" },
-      { value: "wild" },
-      { value: "1bar" },
+    const finalSlotValues = [
+      newStrip[s1].value,
+      newStrip[s2].value,
+      newStrip[s3].value,
     ];
 
-    const values = [newStrip[s1].value, newStrip[s2].value, newStrip[s3].value];
-    let finalValue
+    this.calculatePointsLogic(finalSlotValues);
 
-    if (values.every((x) => x === values[0])) {
-        finalValue = values[0]
-        this.finalScore(finalValue)
-    } else if (values.some((x) => x === "wild")) {
-        const filteredValues = values.filter(x => x !== "wild")
-        finalValue = filteredValues[0]
-        if (filteredValues.every((x) => x === finalValue)) this.finalScore(finalValue)
-    }
-
-    //set which frame to stop on
-    //first value is which bar
-    //second value is number to stop on
     this.setStop(0, s1);
     this.setStop(1, s2);
     this.setStop(2, s3);
 
     this.spinTimer = game.time.events.loop(
-      Phaser.Timer.SECOND / 33.3333,
+      Phaser.Timer.SECOND / 33.33,
       this.spin,
       this
     );
@@ -152,6 +138,7 @@ var StateMain = {
       function (bar) {
         if (bar.active == true) {
           bar.y += 50;
+          bar.filters = this.createBlurFilter(0,20)
           //if the bar is at the end of a spin
           //which is when the y position
           //is less than the negative height of the bar
@@ -166,17 +153,21 @@ var StateMain = {
             }
           }
           if (bar.y > -100) {
-            bar.y -= 500;
-            //then subtract a spin
-            bar.spins--;
-            //if out of spins then
+            this.firstSpin(bar);
           }
         }
       }.bind(this)
     );
   },
+  firstSpin: function (bar) {
+    bar.y -= 300;
+    //then subtract a spin
+    bar.spins--;
+  },
   finalSpin: function (bar) {
     var ty = bar.stopPoint;
+    bar.filters = null;
+    
     var finalTween = game.add.tween(bar).to(
       {
         y: ty,
@@ -195,6 +186,7 @@ var StateMain = {
     //if all bars have stop reset
     if (this.spinCount == 0) {
       game.time.events.remove(this.spinTimer);
+
       this.btnSpin.visible = true;
       if (win > 0) {
         credits += win;
@@ -206,8 +198,24 @@ var StateMain = {
       }
     }
   },
+  createBlurFilter: function (x, y) {
+    var blurX = game.add.filter("BlurX");
+    var blurY = game.add.filter("BlurY");
+    blurX.blur = x;
+    blurY.blur = y;
+    return [blurX, blurY];
+  },
+  calculatePointsLogic: function (values) {
+    if (values.every((x) => x === values[0])) {
+      this.finalScore(values[0]);
+    } else if (values.some((x) => x === "wild")) {
+      const filteredValues = values.filter((x) => x !== "wild");
+      if (filteredValues.every((x) => x === filteredValues[0]))
+        this.finalScore(filteredValues[0]);
+    }
+  },
   update: function () {},
-  finalScore: value => {
+  finalScore: (value) => {
     switch (value) {
       case "2bar":
         win = 2;
