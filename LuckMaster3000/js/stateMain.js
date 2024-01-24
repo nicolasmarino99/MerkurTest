@@ -1,15 +1,16 @@
+
 // Constants
 const SLOT_VALUES = ["1bar", "2bar", "bell", "3bar", "cherry", "7", "wild"];
 const SPIN_DURATION = 500;
 const SPIN_INTERVAL = Phaser.Timer.SECOND / 33.33;
 
 // State variables
-var credits = 1;
-var win = 0;
-var creditsText;
-var winText;
-var spinCount;
-var newStrip = [
+let credits = 1;
+let win = 0;
+let creditsText;
+let winText;
+let spinCount;
+let newStrip = [
   { value: SLOT_VALUES[0] },
   { value: SLOT_VALUES[1] },
   { value: SLOT_VALUES[2] },
@@ -31,7 +32,7 @@ var newStrip = [
   { value: SLOT_VALUES[0] },
 ];
 
-var StateMain = {
+const StateMain = {
   preload: function () {
     game.load.image("background", "images/background.png");
     game.load.image("bars", "images/strip_new.png");
@@ -65,9 +66,9 @@ var StateMain = {
 
     this.tweenSpinStart();
 
-    var s1 = game.rnd.integerInRange(1, 18);
-    var s2 = game.rnd.integerInRange(1, 18);
-    var s3 = game.rnd.integerInRange(1, 18);
+    let s1 = game.rnd.integerInRange(1, 18);
+    let s2 = game.rnd.integerInRange(1, 18);
+    let s3 = game.rnd.integerInRange(1, 18);
 
     const finalSlotValues = [
       newStrip[s1].value,
@@ -84,41 +85,31 @@ var StateMain = {
     this.spinTimer = game.time.events.loop(SPIN_INTERVAL, this.spin, this);
   },
   setStop: function (i, stopPoint) {
-    var bar = this.barGroup.getChildAt(i);
+    let bar = this.barGroup.getChildAt(i);
     bar.stopPoint = -stopPoint * 100;
     bar.active = true;
     bar.spins = 2 + 2 * i;
   },
   setBar: function (i, pos) {
-    var bar = this.barGroup.getChildAt(i);
+    let bar = this.barGroup.getChildAt(i);
     bar.y = -(pos - 1) * 100;
   },
 
-  //loop through the bar group
-  //and move each bar up by the number of spins it
-  //has left by 2
   spin: function () {
     this.barGroup.forEach(
       function (bar) {
-        if (bar.active == true) {
-          bar.y += 50;
-          bar.filters = this.createBlurFilter(0, 20);
-          //if the bar is at the end of a spin
-          //which is when the y position
-          //is less than the negative height of the bar
-          //40 = bounce height
-          if (bar.y > bar.stopPoint + 40) {
-            //if out of spins then
-            if (bar.spins <= 0) {
-              bar.active = false;
-              //do the final spin
-              //which is a tween
-              this.finalSpin(bar);
-            }
-          }
-          if (bar.y > -100) {
+        if (!bar.active) return;
+
+        bar.y += 50;
+        bar.filters = this.createBlurFilter(0, 20);
+
+        if (bar.y <= -100) return;
+
+        if (bar.y > bar.stopPoint + 40 && bar.spins <= 0) {
+            bar.active = false;
+            this.finalSpin(bar);
+        } else {
             this.firstSpin(bar);
-          }
         }
       }.bind(this)
     );
@@ -128,10 +119,10 @@ var StateMain = {
     bar.spins--;
   },
   finalSpin: function (bar) {
-    var ty = bar.stopPoint;
+    let ty = bar.stopPoint;
     bar.filters = null;
 
-    var finalTween = game.add.tween(bar).to(
+    let finalTween = game.add.tween(bar).to(
       {
         y: ty,
       },
@@ -159,8 +150,8 @@ var StateMain = {
     }
   },
   createBlurFilter: function (x, y) {
-    var blurX = game.add.filter("BlurX");
-    var blurY = game.add.filter("BlurY");
+    let blurX = game.add.filter("BlurX");
+    let blurY = game.add.filter("BlurY");
     blurX.blur = x;
     blurY.blur = y;
     return [blurX, blurY];
@@ -175,7 +166,7 @@ var StateMain = {
     }
   },
   tweenSpinStart() {
-    var tween = game.add
+    let tween = game.add
       .tween(this.barGroup)
       .to({ y: this.barGroup.y + 30 }, SPIN_DURATION, Phaser.Easing.Cubic.InOut)
       .to({ y: this.barGroup.y }, SPIN_DURATION, Phaser.Easing.Cubic.InOut);
@@ -209,7 +200,7 @@ var StateMain = {
   },
 };
 
-// Abstract UI Element Factory
+// This should go in other module! in UIElementFactory.js
 const UIElementFactory = {
   createSprite: function ({ x, y, imageKey }) {
     const sprite = game.add.sprite(x, y, imageKey);
@@ -218,18 +209,16 @@ const UIElementFactory = {
   createGroup: function () {return game.add.group();},
   createGraphics: function () {return game.add.graphics();},
   createText: function ({ x, y, content, fontSize }) {
-    var existingText = game.world.getByName(content);
+    let existingText = game.world.getByName(content);
 
     if (existingText) {
-      // Text already exists, update its position and return it
       existingText.x = x;
       existingText.y = y;
       return existingText;
     }
 
-    // Text doesn't exist, create a new one
-    var text = game.add.text(x, y, content);
-    text.name = content; // Set a unique name based on content
+    let text = game.add.text(x, y, content);
+    text.name = content;
     text.anchor.set(0.5);
     text.align = "center";
     text.font = "Arial Black";
@@ -250,10 +239,9 @@ const UIElementFactory = {
   },
 };
 
-// Concrete Phaser UI Element Factory
+// This should go in other module! in Layout.js
 const PhaserUIElementFactory = Object.create(UIElementFactory);
 
-// Layout and Creation Object
 const LayoutBuilder = {
   buildBackground: function () {
     this.background = PhaserUIElementFactory.createSprite({ x: 0, y: 0, imageKey: "background" });
