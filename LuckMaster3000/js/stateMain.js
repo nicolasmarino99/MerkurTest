@@ -1,27 +1,34 @@
-var credits = 100;
-var credits_text;
-var win_text;
+// Constants
+const SLOT_VALUES = ["1bar", "2bar", "bell", "3bar", "cherry", "7", "wild"];
+const SPIN_DURATION = 500;
+const SPIN_INTERVAL = Phaser.Timer.SECOND / 33.33;
+
+// State variables
+var credits = 1;
 var win = 0;
-const newStrip = [
-  { value: "1bar" },
-  { value: "2bar" },
-  { value: "bell" },
-  { value: "3ball" },
-  { value: "cherry" },
-  { value: "7" },
-  { value: "1bar" },
-  { value: "1bar" },
-  { value: "2bar" },
-  { value: "3bar" },
-  { value: "1bar" },
-  { value: "bell" },
-  { value: "cherry" },
-  { value: "3bar" },
-  { value: "2bar" },
-  { value: "1bar" },
-  { value: "2bar" },
-  { value: "wild" },
-  { value: "1bar" },
+var creditsText;
+var winText;
+var spinCount;
+var newStrip = [
+  { value: SLOT_VALUES[0] },
+  { value: SLOT_VALUES[1] },
+  { value: SLOT_VALUES[2] },
+  { value: SLOT_VALUES[3] },
+  { value: SLOT_VALUES[4] },
+  { value: SLOT_VALUES[5] },
+  { value: SLOT_VALUES[0] },
+  { value: SLOT_VALUES[0] },
+  { value: SLOT_VALUES[1] },
+  { value: SLOT_VALUES[3] },
+  { value: SLOT_VALUES[0] },
+  { value: SLOT_VALUES[2] },
+  { value: SLOT_VALUES[4] },
+  { value: SLOT_VALUES[3] },
+  { value: SLOT_VALUES[1] },
+  { value: SLOT_VALUES[0] },
+  { value: SLOT_VALUES[1] },
+  { value: SLOT_VALUES[6] },
+  { value: SLOT_VALUES[0] },
 ];
 
 var StateMain = {
@@ -39,63 +46,19 @@ var StateMain = {
     );
   },
   create: function () {
-    this.background = game.add.sprite(0, 0, "background");
-    this.background.anchor.set(0, 0);
-
-
-
-    this.barGroup = game.add.group();
-    this.graphics = game.add.graphics();
-
-    for (var i = 0; i < 3; i++) {
-      var bar = game.add.sprite(i * 138, 0, "bars");
-      this.barGroup.add(bar);
-    }
-    this.barGroup.x = 50;
-    this.barGroup.y = 110;
-
-    this.graphics.beginFill(0xff0000);
-    this.graphics.drawRect(0, 0, 400, 100);
-    this.graphics.endFill();
-
-    this.graphics.x = 50;
-    this.graphics.y = this.barGroup.y;
-    this.barGroup.mask = this.graphics;
-
-    this.setBar(0, 1);
-    this.setBar(1, 1);
-    this.setBar(2, 1);
-
-    this.btnSpin = game.add.sprite(game.width / 2, 370, "btnSpin");
-    this.btnSpin.anchor.set(0.5, 0.5);
-
-    this.btnSpin.inputEnabled = true;
-    this.btnSpin.events.onInputDown.add(this.startSpin, this);
-
-    //Add credits Text
-    credits_text = game.add.text(175, 310, "" + credits);
-    credits_text.anchor.set(0.5);
-    credits_text.align = "center";
-
-    credits_text.font = "Arial Black";
-    credits_text.fontSize = 22;
-    credits_text.fontWeight = "bold";
-    credits_text.fill = "#fff";
-
-    //Add win Text
-    win_text = game.add.text(305, 310, "0");
-    win_text.anchor.set(0.5);
-    win_text.align = "center";
-
-    win_text.font = "Arial Black";
-    win_text.fontSize = 20;
-    win_text.fontWeight = "bold";
-    win_text.fill = "#fff";
+    const builder = Object.create(LayoutBuilder);
+    builder.buildBackground();
+    builder.buildBars();
+    builder.buildUI(this.startSpin, this);
+    
+    this.btnSpin = builder.btnSpin;
+    this.barGroup = builder.barGroup
   },
+
   startSpin() {
     credits--;
-    credits_text.text = "" + credits;
-    win_text.text = "";
+    creditsText.text = `${credits}`;
+    winText.text = "";
     this.spinCount = 3;
 
     this.btnSpin.visible = false;
@@ -118,11 +81,7 @@ var StateMain = {
     this.setStop(1, s2);
     this.setStop(2, s3);
 
-    this.spinTimer = game.time.events.loop(
-      Phaser.Timer.SECOND / 33.33,
-      this.spin,
-      this
-    );
+    this.spinTimer = game.time.events.loop(SPIN_INTERVAL, this.spin, this);
   },
   setStop: function (i, stopPoint) {
     var bar = this.barGroup.getChildAt(i);
@@ -176,7 +135,7 @@ var StateMain = {
       {
         y: ty,
       },
-      1000,
+      SPIN_DURATION,
       Phaser.Easing.Cubic.InOut,
       true
     );
@@ -191,11 +150,11 @@ var StateMain = {
       this.btnSpin.visible = true;
       if (win > 0) {
         credits += win;
-        win_text.text = "" + win;
-        credits_text.text = "" + credits;
+        winText.text = `${win}`;
+        creditsText.text = `${credits}`;
         win = 0;
       } else {
-        win_text.text = "";
+        winText.text = "";
       }
     }
   },
@@ -216,35 +175,140 @@ var StateMain = {
     }
   },
   tweenSpinStart() {
-    var tween = game.add.tween(this.barGroup)
-        .to({ y: this.barGroup.y + 30 }, 500, Phaser.Easing.Cubic.InOut)
-        .to({ y: this.barGroup.y }, 500, Phaser.Easing.Cubic.InOut);
+    var tween = game.add
+      .tween(this.barGroup)
+      .to({ y: this.barGroup.y + 30 }, SPIN_DURATION, Phaser.Easing.Cubic.InOut)
+      .to({ y: this.barGroup.y }, SPIN_DURATION, Phaser.Easing.Cubic.InOut);
     tween.start();
-},
+  },
   update: function () {},
   finalScore: (value) => {
     switch (value) {
-      case "2bar":
+      case SLOT_VALUES[0]:
         win = 2;
         break;
-      case "bell":
+      case SLOT_VALUES[1]:
         win = 5;
         break;
-      case "3bar":
+      case SLOT_VALUES[2]:
         win = 3;
         break;
-      case "cherry":
+      case SLOT_VALUES[3]:
         win = 5;
         break;
-      case "7":
+      case SLOT_VALUES[4]:
         win = 10;
         break;
-      case "1bar":
+      case SLOT_VALUES[5]:
         win = 1;
         break;
-      case "wild":
+      case SLOT_VALUES[5]:
         win = 50;
         break;
     }
   },
 };
+
+// Abstract UI Element Factory
+const UIElementFactory = {
+  createSprite: function ({ x, y, imageKey }) {
+    const sprite = game.add.sprite(x, y, imageKey);
+    return sprite;
+  },
+  createGroup: function () {return game.add.group();},
+  createGraphics: function () {return game.add.graphics();},
+  createText: function ({ x, y, content, fontSize }) {
+    var existingText = game.world.getByName(content);
+
+    if (existingText) {
+      // Text already exists, update its position and return it
+      existingText.x = x;
+      existingText.y = y;
+      return existingText;
+    }
+
+    // Text doesn't exist, create a new one
+    var text = game.add.text(x, y, content);
+    text.name = content; // Set a unique name based on content
+    text.anchor.set(0.5);
+    text.align = "center";
+    text.font = "Arial Black";
+    text.fontSize = fontSize;
+    text.fontWeight = "bold";
+    text.fill = "#fff";
+
+    return text;
+  },
+  createButton: function ({ x, y, imageKey }) {
+    if (this.btnSpin) {
+      return this.btnSpin;
+    }
+
+    this.btnSpin = game.add.sprite(game.width / 2, 370, imageKey);
+    this.btnSpin.anchor.set(x, y);
+    return this.btnSpin;
+  },
+};
+
+// Concrete Phaser UI Element Factory
+const PhaserUIElementFactory = Object.create(UIElementFactory);
+
+// Layout and Creation Object
+const LayoutBuilder = {
+  buildBackground: function () {
+    this.background = PhaserUIElementFactory.createSprite({ x: 0, y: 0, imageKey: "background" });
+    this.background.anchor.set(0, 0);
+  },
+
+  buildBars: function () {
+    this.barGroup = PhaserUIElementFactory.createGroup();
+    this.barGroup.x = 50;
+    this.barGroup.y = 110;
+
+    this.graphics = PhaserUIElementFactory.createGraphics();
+    this.graphics.beginFill(0xff0000);
+    this.graphics.drawRect(0, 0, 400, 100);
+    this.graphics.endFill();
+
+    this.graphics.x = 50;
+    this.graphics.y = this.barGroup.y;
+    this.barGroup.mask = this.graphics;
+
+    for (let i = 0; i < 3; i++) {
+      const bar = PhaserUIElementFactory.createSprite({ x: i * 138, y: 0, imageKey: "bars" });
+      this.barGroup.add(bar);
+    }
+  },
+
+  buildUI: function (callback, context) {
+    this.setBar(0, 1);
+    this.setBar(1, 1);
+    this.setBar(2, 1);
+
+    this.btnSpin = PhaserUIElementFactory.createButton({ x: 0.5, y: 0.5, imageKey: "btnSpin" });
+
+    creditsText = PhaserUIElementFactory.createText({
+      x: 175,
+      y: 310,
+      content: `${credits}`,
+      fontSize: 22,
+    });
+
+    winText = PhaserUIElementFactory.createText({
+      x: 305,
+      y: 310,
+      content: `${win}`,
+      fontSize: 22,
+    });
+
+
+    this.btnSpin.inputEnabled = true;
+    this.btnSpin.events.onInputDown.add(callback, context);
+  },
+
+  setBar: function (i, pos) {
+    const bar = this.barGroup.getChildAt(i);
+    bar.y = -(pos - 1) * 100;
+  },
+};
+
