@@ -26,3 +26,6 @@ A blur effect has been added during the spinning animation to enhance the visual
 
 ### 6. Improved Win Calculation
 The finalScore function now uses constants (SLOT_VALUES) for better code readability. Additionally, it has been modified to correctly assign win values based on the slot machine symbols.
+
+### 6. A longer new stripe added
+The stripe now follows a sequence of positions of fixed objects, this allows the game to have any kind of stripe if it is desired to be changed.
