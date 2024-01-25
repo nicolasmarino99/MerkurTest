@@ -130,7 +130,10 @@ const StateMain = {
       Phaser.Easing.Cubic.InOut,
       true
     );
-    finalTween.onComplete.add(this.checkFinished, this);
+    finalTween.onComplete.add(function () {
+      bar.filters = null;
+      this.checkFinished();
+  }, this);
   },
   checkFinished() {
     this.spinCount--;
@@ -199,104 +202,3 @@ const StateMain = {
     }
   },
 };
-
-// This should go in other module! in UIElementFactory.js
-const UIElementFactory = {
-  createSprite: function ({ x, y, imageKey }) {
-    const sprite = game.add.sprite(x, y, imageKey);
-    return sprite;
-  },
-  createGroup: function () {return game.add.group();},
-  createGraphics: function () {return game.add.graphics();},
-  createText: function ({ x, y, content, fontSize }) {
-    let existingText = game.world.getByName(content);
-
-    if (existingText) {
-      existingText.x = x;
-      existingText.y = y;
-      return existingText;
-    }
-
-    let text = game.add.text(x, y, content);
-    text.name = content;
-    text.anchor.set(0.5);
-    text.align = "center";
-    text.font = "Arial Black";
-    text.fontSize = fontSize;
-    text.fontWeight = "bold";
-    text.fill = "#fff";
-
-    return text;
-  },
-  createButton: function ({ x, y, imageKey }) {
-    if (this.btnSpin) {
-      return this.btnSpin;
-    }
-
-    this.btnSpin = game.add.sprite(game.width / 2, 370, imageKey);
-    this.btnSpin.anchor.set(x, y);
-    return this.btnSpin;
-  },
-};
-
-// This should go in other module! in Layout.js
-const PhaserUIElementFactory = Object.create(UIElementFactory);
-
-const LayoutBuilder = {
-  buildBackground: function () {
-    this.background = PhaserUIElementFactory.createSprite({ x: 0, y: 0, imageKey: "background" });
-    this.background.anchor.set(0, 0);
-  },
-
-  buildBars: function () {
-    this.barGroup = PhaserUIElementFactory.createGroup();
-    this.barGroup.x = 50;
-    this.barGroup.y = 110;
-
-    this.graphics = PhaserUIElementFactory.createGraphics();
-    this.graphics.beginFill(0xff0000);
-    this.graphics.drawRect(0, 0, 400, 100);
-    this.graphics.endFill();
-
-    this.graphics.x = 50;
-    this.graphics.y = this.barGroup.y;
-    this.barGroup.mask = this.graphics;
-
-    for (let i = 0; i < 3; i++) {
-      const bar = PhaserUIElementFactory.createSprite({ x: i * 138, y: 0, imageKey: "bars" });
-      this.barGroup.add(bar);
-    }
-  },
-
-  buildUI: function (callback, context) {
-    this.setBar(0, 1);
-    this.setBar(1, 1);
-    this.setBar(2, 1);
-
-    this.btnSpin = PhaserUIElementFactory.createButton({ x: 0.5, y: 0.5, imageKey: "btnSpin" });
-
-    creditsText = PhaserUIElementFactory.createText({
-      x: 175,
-      y: 310,
-      content: `${credits}`,
-      fontSize: 22,
-    });
-
-    winText = PhaserUIElementFactory.createText({
-      x: 305,
-      y: 310,
-      content: `${win}`,
-      fontSize: 22,
-    });
-
-
-    this.btnSpin.inputEnabled = true;
-    this.btnSpin.events.onInputDown.add(callback, context);
-  },
-
-  setBar: function (i, pos) {
-    const bar = this.barGroup.getChildAt(i);
-    bar.y = -(pos - 1) * 100;
-  },
-};
-
